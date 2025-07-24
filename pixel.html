@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel Coin Collector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .game-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1/1;
+      background-color: #1f2937;
+      border: 4px solid #374151;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+    
+    #player {
+      position: absolute;
+      width: 8%;
+      height: 8%;
+      background-color: #10b981;
+      border-radius: 4px;
+      transition: all 0.1s ease;
+      z-index: 2;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+    
+    #coin {
+      position: absolute;
+      width: 8%;
+      height: 8%;
+      background-color: #f59e0b;
+      border-radius: 50%;
+      z-index: 1;
+      animation: pulse 1s infinite alternate;
+    }
+    
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.2); }
+    }
+    
+    .control-btn {
+      width: 60px;
+      height: 60px;
+      background-color: #374151;
+      border: 2px solid #4b5563;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    
+    .control-btn:active {
+      background-color: #4b5563;
+      transform: scale(0.95);
+    }
+    
+    .controls-container {
+      display: none;
+      grid-template-areas:
+        ". up ."
+        "left down right";
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .controls-container {
+        display: grid;
+      }
+    }
+    
+    .coin-effect {
+      position: absolute;
+      width: 8%;
+      height: 8%;
+      background-color: rgba(245, 158, 11, 0.7);
+      border-radius: 50%;
+      animation: collect 0.5s forwards;
+      z-index: 3;
+    }
+    
+    @keyframes collect {
+      to {
+        transform: scale(3);
+        opacity: 0;
+      }
+    }
+    
+    .obstacle {
+      position: absolute;
+      width: 8%;
+      height: 8%;
+      background-color: #ef4444;
+      border-radius: 2px;
+      z-index: 1;
+    }
+    
+    #start-btn {
+      background-color: #10b981;
+      color: white;
+      font-weight: bold;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    #start-btn:hover {
+      background-color: #059669;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4 font-mono">
+  <div class="text-center mb-4">
+    <h1 class="text-3xl font-bold text-green-400 mb-2">🕹️ Pixel Coin Collector</h1>
+    <p class="text-gray-400">Collect coins and avoid obstacles!</p>
+  </div>
+
+  <button id="start-btn">Start Game</button>
+  
+  <div class="flex flex-col items-center">
+    <div class="flex items-center justify-between w-full max-w-md mb-4 gap-2">
+      <div class="bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+        <p class="text-sm text-gray-400">Score</p>
+        <p class="text-2xl font-bold text-yellow-400"><span id="score">0</span></p>
+      </div>
+      <div class="bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+        <p class="text-sm text-gray-400">High Score</p>
+        <p class="text-2xl font-bold text-purple-400"><span id="high-score">0</span></p>
+      </div>
+      <div class="bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
+        <p class="text-sm text-gray-400">Time</p>
+        <p class="text-2xl font-bold text-blue-400"><span id="time">60</span>s</p>
+      </div>
+    </div>
+
+    <div class="game-container" id="game" tabindex="0">
+      <div id="player"></div>
+      <div id="coin"></div>
+      <!-- Obstacles will be added by JavaScript -->
+    </div>
+
+    <div class="controls-container" id="controls">
+      <button class="control-btn" id="up" style="grid-area: up">↑</button>
+      <button class="control-btn" id="left" style="grid-area: left">←</button>
+      <button class="control-btn" id="down" style="grid-area: down">↓</button>
+      <button class="control-btn" id="right" style="grid-area: right">→</button>
+    </div>
+  </div>
+
+  <div class="mt-6 text-center text-gray-400 text-sm">
+    <p>Desktop: Use arrow keys | Mobile: Use buttons</p>
+    <p class="mt-2">Collect yellow coins, avoid red blocks!</p>
+  </div>
+
+
+  <script>
+    document.addEventListener('keydown', () => {
+    if (!gameStarted) {
+      initGame();
+    }
+  });
+    // Game elements
+    const game = document.getElementById('game');
+    const player = document.getElementById('player');
+    const coin = document.getElementById('coin');
+    const scoreDisplay = document.getElementById('score');
+    const highScoreDisplay = document.getElementById('high-score');
+    const timeDisplay = document.getElementById('time');
+    const controls = document.getElementById('controls');
+    const startBtn = document.getElementById('start-btn');
+    
+    // Control buttons
+    const upBtn = document.getElementById('up');
+    const leftBtn = document.getElementById('left');
+    const downBtn = document.getElementById('down');
+    const rightBtn = document.getElementById('right');
+    
+    // Game variables
+    let playerX = 0;
+    let playerY = 0;
+    let score = 0;
+    let highScore = localStorage.getItem('highScore') || 0;
+    let timeLeft = 60;
+    let gameInterval;
+    let timeInterval;
+    let obstacles = [];
+    let gameStarted = false;
+    
+    // Game dimensions
+    const gameSize = game.offsetWidth;
+    const gridSize = 12;
+    const cellSize = gameSize / gridSize;
+    
+    // Initialize game
+    // ...existing code...
+function initGame() {
+  if (gameStarted) return;
+
+  startBtn.style.display = 'none';
+  gameStarted = true;
+
+  // Set initial positions
+  playerX = Math.floor(gridSize / 2);
+  playerY = Math.floor(gridSize / 2);
+  updatePlayerPosition();
+
+  // 👉 Place the coin first
+  moveCoin();
+
+  // 👉 Then create obstacles (they now avoid coin and player)
+  createObstacles();
+
+  // Update high score display
+  highScoreDisplay.textContent = highScore;
+
+  // Reset score and time
+  score = 0;
+  scoreDisplay.textContent = score;
+  timeLeft = 60;
+  timeDisplay.textContent = timeLeft;
+
+  // Start game loop
+  clearInterval(gameInterval);
+  clearInterval(timeInterval);
+  gameInterval = setInterval(gameLoop, 100);
+  timeInterval = setInterval(updateTime, 1000);
+
+  game.focus();
+}
+
+function createObstacles() {
+  // Clear existing obstacles
+  obstacles.forEach(obs => obs.remove());
+  obstacles = [];
+
+  // Create 5-8 obstacles
+  const obstacleCount = Math.floor(Math.random() * 4) + 5;
+
+  for (let i = 0; i < obstacleCount; i++) {
+    const obstacle = document.createElement('div');
+    obstacle.className = 'obstacle';
+
+    let x, y, valid = false;
+    while (!valid) {
+      x = Math.floor(Math.random() * gridSize);
+      y = Math.floor(Math.random() * gridSize);
+      valid = true;
+
+      // Don't place on player
+      if (x === playerX && y === playerY) {
+        valid = false;
+        continue;
+      }
+      // Don't place on coin
+      if (
+        x === Math.floor(parseInt(coin.style.left) / cellSize) &&
+        y === Math.floor(parseInt(coin.style.top) / cellSize)
+      ) {
+        valid = false;
+        continue;
+      }
+      // Don't overlap other obstacles
+      for (const obs of obstacles) {
+        const obsX = Math.round(parseInt(obs.style.left) / cellSize);
+        const obsY = Math.round(parseInt(obs.style.top) / cellSize);
+        if (x === obsX && y === obsY) {
+          valid = false;
+          break;
+        }
+      }
+    }
+
+    obstacle.style.left = `${x * cellSize}px`;
+    obstacle.style.top = `${y * cellSize}px`;
+    game.appendChild(obstacle);
+    obstacles.push(obstacle);
+  }
+}
+// ...existing code...
+    
+    // Game loop
+    function gameLoop() {
+    const playerRect = player.getBoundingClientRect();
+
+    // Check coin collision
+    const coinRect = coin.getBoundingClientRect();
+    if (
+      Math.abs(playerRect.left - coinRect.left) < cellSize &&
+      Math.abs(playerRect.top - coinRect.top) < cellSize
+    ) {
+      collectCoin();
+    }
+
+    // Check obstacle collisions
+    for (const obs of obstacles) {
+      const obsRect = obs.getBoundingClientRect();
+      if (
+        Math.abs(playerRect.left - obsRect.left) < cellSize &&
+        Math.abs(playerRect.top - obsRect.top) < cellSize
+      ) {
+        gameOver();
+        return;
+      }
+    }
+  }
+
+    
+    // Update time
+    function updateTime() {
+      timeLeft--;
+      timeDisplay.textContent = timeLeft;
+      
+      if (timeLeft <= 0) {
+        gameOver();
+      }
+    }
+    
+    // Collect coin
+    function collectCoin() {
+      score++;
+      scoreDisplay.textContent = score;
+      
+      // Create collection effect
+      const effect = document.createElement('div');
+      effect.className = 'coin-effect';
+      effect.style.left = coin.style.left;
+      effect.style.top = coin.style.top;
+      game.appendChild(effect);
+      
+      // Remove effect after animation
+      setTimeout(() => effect.remove(), 500);
+      
+      // Move coin to new position
+      moveCoin();
+    }
+    
+    // Move coin to random position
+    function moveCoin() {
+    let x, y;
+    let validPosition = false;
+
+    while (!validPosition) {
+      x = Math.floor(Math.random() * gridSize);
+      y = Math.floor(Math.random() * gridSize);
+
+      validPosition = true;
+
+      // Avoid player's position
+      if (x === playerX && y === playerY) {
+        validPosition = false;
+        continue;
+      }
+
+      // Avoid any obstacle
+      for (const obs of obstacles) {
+        const obsX = Math.round(parseInt(obs.style.left) / cellSize);
+        const obsY = Math.round(parseInt(obs.style.top) / cellSize);
+        if (x === obsX && y === obsY) {
+          validPosition = false;
+          break;
+        }
+      }
+    }
+
+    coin.style.left = `${x * cellSize}px`;
+    coin.style.top = `${y * cellSize}px`;
+  }
+
+    
+    // Update player position
+    function updatePlayerPosition() {
+      player.style.left = `${playerX * cellSize}px`;
+      player.style.top = `${playerY * cellSize}px`;
+    }
+    
+    // Game over
+    function gameOver() {
+      clearInterval(gameInterval);
+      clearInterval(timeInterval);
+      gameStarted = false;
+      
+      // Update high score if needed
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+        highScoreDisplay.textContent = highScore;
+      }
+      
+      // Show game over message
+      alert(`Game Over! Your score: ${score}\nPress OK to play again.`);
+      
+      // Show start button again
+      startBtn.style.display = 'block';
+    }
+    
+    // Movement functions
+    function moveUp() {
+      if (playerY > 0) playerY--;
+      updatePlayerPosition();
+    }
+    
+    function moveLeft() {
+      if (playerX > 0) playerX--;
+      updatePlayerPosition();
+    }
+    
+    function moveDown() {
+      if (playerY < gridSize - 1) playerY++;
+      updatePlayerPosition();
+    }
+    
+    function moveRight() {
+      if (playerX < gridSize - 1) playerX++;
+      updatePlayerPosition();
+    }
+    
+    // Event listeners
+    startBtn.addEventListener('click', initGame);
+    
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (!gameStarted) return;
+      
+      switch (e.key) {
+        case 'ArrowUp': moveUp(); break;
+        case 'ArrowLeft': moveLeft(); break;
+        case 'ArrowDown': moveDown(); break;
+        case 'ArrowRight': moveRight(); break;
+      }
+    });
+    
+    // Mobile button controls
+    upBtn.addEventListener('click', () => {
+      if (gameStarted) moveUp();
+    });
+    
+    leftBtn.addEventListener('click', () => {
+      if (gameStarted) moveLeft();
+    });
+    
+    downBtn.addEventListener('click', () => {
+      if (gameStarted) moveDown();
+    });
+    
+    rightBtn.addEventListener('click', () => {
+      if (gameStarted) moveRight();
+    });
+    
+    // Touch event listeners for swipe controls
+    let touchStartX = 0;
+    let touchStartY = 0;
+    
+    game.addEventListener('touchstart', (e) => {
+      if (!gameStarted) {
+        initGame();
+        return;
+      }
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    });
+    
+    game.addEventListener('touchmove', (e) => {
+      if (!gameStarted) return;
+      
+      e.preventDefault();
+      const touchEndX = e.touches[0].clientX;
+      const touchEndY = e.touches[0].clientY;
+      
+      const dx = touchEndX - touchStartX;
+      const dy = touchEndY - touchStartY;
+      
+      // Determine primary direction
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0) moveRight();
+        else moveLeft();
+      } else {
+        if (dy > 0) moveDown();
+        else moveUp();
+      }
+      
+      // Update touch start position for continuous movement
+      touchStartX = touchEndX;
+      touchStartY = touchEndY;
+    }, { passive: false });
+  </script>
+</body>
+</html>

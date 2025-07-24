@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responsive Chess Game</title>
+  <!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- chess.js (for game logic) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
+
+<!-- chessboard.js (for board rendering) -->
+<link rel="stylesheet" href="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" />
+<script src="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+
+  <style>
+    .chess-board {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+    .chess-square {
+      aspect-ratio: 1 / 1;
+    }
+  </style>
+</head>
+<body class="bg-gray-800 text-white min-h-screen flex flex-col items-center justify-center p-4">
+  <h1 class="text-3xl font-bold mb-4">Chess Game</h1>
+
+  <div class="mb-4">
+    <button id="playPvP" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded mr-2">Play with Player</button>
+    <button id="playSelf" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Play Both</button>
+  </div>
+
+  <div id="board" class="chess-board w-full max-w-md border-4 border-white"></div>
+
+  <script>
+    const board = document.getElementById("board");
+const playPvP = document.getElementById("playPvP");
+const playSelf = document.getElementById("playSelf");
+
+const initialBoard = [
+  ["r", "n", "b", "q", "k", "b", "n", "r"],
+  ["p", "p", "p", "p", "p", "p", "p", "p"],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["P", "P", "P", "P", "P", "P", "P", "P"],
+  ["R", "N", "B", "Q", "K", "B", "N", "R"]
+];
+
+let currentPlayer = "white";
+let selected = null;
+let gameMode = "pvp";
+
+function renderBoard() {
+  board.innerHTML = "";
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const square = document.createElement("div");
+      square.className = `chess-square flex items-center justify-center text-2xl font-bold cursor-pointer ${
+        (i + j) % 2 === 0 ? "bg-white text-black" : "bg-black text-white"
+      }`;
+
+      if (selected && selected.row === i && selected.col === j) {
+        square.classList.add("ring-4", "ring-yellow-500");
+      }
+
+      square.dataset.row = i;
+      square.dataset.col = j;
+      square.innerText = initialBoard[i][j];
+      square.onclick = () => handleClick(i, j);
+      board.appendChild(square);
+    }
+  }
+}
+
+function handleClick(row, col) {
+  const clickedPiece = initialBoard[row][col];
+  const isWhitePiece = /[A-Z]/.test(clickedPiece);
+  const isBlackPiece = /[a-z]/.test(clickedPiece);
+
+  // Select a piece
+  if (!selected) {
+    if (
+      (currentPlayer === "white" && isWhitePiece) ||
+      (currentPlayer === "black" && isBlackPiece)
+    ) {
+      selected = { row, col, piece: clickedPiece };
+    }
+  } else {
+    // Move piece
+    if (row === selected.row && col === selected.col) {
+      selected = null; // Deselect if same square
+    } else {
+      initialBoard[selected.row][selected.col] = "";
+      initialBoard[row][col] = selected.piece;
+      selected = null;
+      currentPlayer = currentPlayer === "white" ? "black" : "white";
+    }
+  }
+
+  renderBoard();
+}
+
+playPvP.onclick = () => {
+  gameMode = "pvp";
+  resetGame();
+};
+
+playSelf.onclick = () => {
+  gameMode = "self";
+  resetGame();
+};
+
+function resetGame() {
+  currentPlayer = "white";
+  selected = null;
+  const pieces = [
+    ["r", "n", "b", "q", "k", "b", "n", "r"],
+    ["p", "p", "p", "p", "p", "p", "p", "p"],
+    ["", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", ""],
+    ["P", "P", "P", "P", "P", "P", "P", "P"],
+    ["R", "N", "B", "Q", "K", "B", "N", "R"]
+  ];
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      initialBoard[i][j] = pieces[i][j];
+    }
+  }
+  renderBoard();
+}
+
+resetGame();
+
+  </script>
+</body>
+</html>

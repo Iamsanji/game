@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Car Racing Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .car {
+      transition: left 0.05s linear;
+      image-rendering: pixelated;
+    }
+    
+    .road-container {
+      background-color: #333;
+      position: relative;
+    }
+    
+    .pixel-car {
+      width: 40px;
+      height: 20px;
+      background-repeat: no-repeat;
+      background-position: center;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    
+    .car-1 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20'%3E%3Crect x='5' y='5' width='30' height='10' fill='%23FF5252'/%3E%3Crect x='10' y='2' width='20' height='3' fill='%23FF5252'/%3E%3Crect x='2' y='8' width='6' height='6' fill='%23000'/%3E%3Crect x='32' y='8' width='6' height='6' fill='%23000'/%3E%3C/svg%3E"); }
+    .car-2 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20'%3E%3Crect x='5' y='5' width='30' height='10' fill='%234CAF50'/%3E%3Crect x='10' y='2' width='20' height='3' fill='%234CAF50'/%3E%3Crect x='2' y='8' width='6' height='6' fill='%23000'/%3E%3Crect x='32' y='8' width='6' height='6' fill='%23000'/%3E%3C/svg%3E"); }
+    .car-3 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20'%3E%3Crect x='5' y='5' width='30' height='10' fill='%232196F3'/%3E%3Crect x='10' y='2' width='20' height='3' fill='%232196F3'/%3E%3Crect x='2' y='8' width='6' height='6' fill='%23000'/%3E%3Crect x='32' y='8' width='6' height='6' fill='%23000'/%3E%3C/svg%3E"); }
+    .car-4 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20'%3E%3Crect x='5' y='5' width='30' height='10' fill='%23FFC107'/%3E%3Crect x='10' y='2' width='20' height='3' fill='%23FFC107'/%3E%3Crect x='2' y='8' width='6' height='6' fill='%23000'/%3E%3Crect x='32' y='8' width='6' height='6' fill='%23000'/%3E%3C/svg%3E"); }
+    .car-5 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20'%3E%3Crect x='5' y='5' width='30' height='10' fill='%239C27B0'/%3E%3Crect x='10' y='2' width='20' height='3' fill='%239C27B0'/%3E%3Crect x='2' y='8' width='6' height='6' fill='%23000'/%3E%3Crect x='32' y='8' width='6' height='6' fill='%23000'/%3E%3C/svg%3E"); }
+    .car-6 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20'%3E%3Crect x='5' y='5' width='30' height='10' fill='%23FF5722'/%3E%3Crect x='10' y='2' width='20' height='3' fill='%23FF5722'/%3E%3Crect x='2' y='8' width='6' height='6' fill='%23000'/%3E%3Crect x='32' y='8' width='6' height='6' fill='%23000'/%3E%3C/svg%3E"); }
+  </style>
+</head>
+<body class="bg-gray-900 min-h-screen flex flex-col items-center p-4 space-y-4">
+
+  <h1 class="text-2xl font-bold text-yellow-400">🏁 Pixel Racing Game</h1>
+
+  <!-- Controls -->
+  <div class="flex flex-col items-center space-y-3 bg-gray-800 p-3 rounded-lg w-full max-w-md">
+    <div class="flex items-center space-x-3 w-full justify-between">
+      <label for="carCount" class="text-sm font-medium text-white">Racers:</label>
+      <input id="carCount" type="number" min="2" max="12" value="6"
+             class="w-16 px-2 py-1 border border-gray-600 rounded text-center bg-gray-700 text-white text-sm" />
+    </div>
+    <div class="flex space-x-3 w-full">
+      <button onclick="startGame()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex-1">
+        START RACE
+      </button>
+      <button onclick="restartGame()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex-1">
+        RESET
+      </button>
+    </div>
+  </div>
+
+  <!-- Race Track Container -->
+  <div id="roadContainer" class="road-container relative w-full max-w-4xl rounded-lg overflow-hidden border-2 border-gray-600">
+    <div id="raceTrack" class="relative w-full h-full"></div>
+    <div class="finish-line absolute right-0 top-0 h-full w-2 bg-gradient-to-r from-red-500 to-yellow-500"></div>
+  </div>
+
+  <!-- Results Modal -->
+  <div id="resultsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border-2 border-yellow-500">
+      <div class="bg-yellow-500 p-3 text-center rounded-t-lg -m-6 mb-4">
+        <h2 class="text-xl font-bold text-gray-900">🏆 RACE RESULTS 🏆</h2>
+      </div>
+      <ul id="modalResults" class="divide-y divide-gray-700 max-h-[60vh] overflow-y-auto">
+        <!-- Results will be inserted here -->
+      </ul>
+      <button onclick="closeModal()" class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-bold">
+        CLOSE
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let cars = [];
+    let results = [];
+    let raceInProgress = false;
+    let animationFrame;
+
+    function startGame() {
+      if (raceInProgress) return;
+      raceInProgress = true;
+
+      const count = parseInt(document.getElementById('carCount').value);
+      const track = document.getElementById('raceTrack');
+      const roadContainer = document.getElementById('roadContainer');
+
+      if (count < 2 || count > 12) {
+        alert('Please enter between 2 and 12 cars.');
+        raceInProgress = false;
+        return;
+      }
+
+      track.innerHTML = '';
+      cars = [];
+      results = [];
+
+      // Set dynamic height for road container to exactly fit all cars
+      roadContainer.style.height = `${count * 30}px`; // 30px per car
+
+      for (let i = 0; i < count; i++) {
+        const car = document.createElement('div');
+        car.className = `pixel-car car car-${(i % 6) + 1}`;
+        car.style.top = `${i * 30 + 15}px`;
+        car.style.left = '20px';
+        
+        // Add number to car
+        const number = document.createElement('div');
+        number.className = 'absolute text-white text-xs font-bold';
+        number.style.left = '-15px';
+        number.style.top = '50%';
+        number.style.transform = 'translateY(-50%)';
+        number.textContent = i+1;
+        car.appendChild(number);
+        
+        track.appendChild(car);
+
+        cars.push({
+          name: `Racer ${i+1}`,
+          element: car,
+          position: 0,
+          speed: Math.random() * 3 + 2,
+          lane: i
+        });
+      }
+
+      race();
+    }
+
+    function race() {
+      const finishLine = document.getElementById('roadContainer').clientWidth - 50;
+      animationFrame = requestAnimationFrame(race);
+
+      cars.forEach((car) => {
+        if (!results.includes(car.name)) {
+          car.position += car.speed + (Math.random() - 0.5) * 0.5;
+          car.element.style.left = car.position + 'px';
+
+          if (car.position >= finishLine) {
+            results.push(car.name);
+            car.element.classList.add('animate-pulse');
+
+            if (results.length === cars.length) {
+              cancelAnimationFrame(animationFrame);
+              showLeaderboard();
+              raceInProgress = false;
+            }
+          }
+        }
+      });
+    }
+
+    function showLeaderboard() {
+      const modal = document.getElementById('resultsModal');
+      const resultsList = document.getElementById('modalResults');
+      
+      resultsList.innerHTML = results.map((name, i) => `
+        <li class="py-3 flex items-center ${i < 3 ? 'bg-gray-700' : ''}">
+          <span class="text-lg ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-300' : i === 2 ? 'text-amber-600' : 'text-gray-400'}">
+            ${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#'}
+          </span>
+          <span class="ml-3 text-white">${name}</span>
+          <span class="ml-auto text-gray-400">${i+1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'}</span>
+        </li>
+      `).join('');
+      
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('resultsModal').classList.add('hidden');
+    }
+
+    function restartGame() {
+      cancelAnimationFrame(animationFrame);
+      raceInProgress = false;
+      document.getElementById('raceTrack').innerHTML = '';
+      document.getElementById('roadContainer').style.height = 'auto';
+      closeModal();
+    }
+  </script>
+</body>
+</html>
